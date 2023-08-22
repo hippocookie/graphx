@@ -1,6 +1,7 @@
 package org.apache.spark
 
 import org.apache.spark.util.collection.OpenHashSet
+
 package object graphx {
   type VertexId = Long
 
