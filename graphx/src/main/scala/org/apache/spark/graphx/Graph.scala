@@ -65,5 +65,30 @@ abstract class Graph[VD: ClassTag, ED: ClassTag] protected() extends Serializabl
 
   private[graphx] def aggregateMessagesWithActiveSet[A: ClassTag](sendMsg: EdgeContext[VD, ED, A] => Unit, mergeMsg: (A, A) => A, tripletFields: Any, activeSetOpt: Option[(VertexRDD[_], EdgeDirection)]) = VertexRDD[A]
 
+  def outerJoinVertices[U: ClassTag, VD2: ClassTag](other: RDD[(VertexId, U)]) (mapFunc: (VertexId, VD, Option[U]) => VD2)(implicit eq: VD =:= VD2 = null) : Graph[VD2, ED]
 
+  val ops = new GraphOps(this)
+
+}
+
+object Graph {
+
+  def fromEdgeTuples[VD: ClassTag](rawEdges: RDD[(VertexId, VertexId)], defaultValue: VD, uniqueEdges: Option[PartitionStrategy] = None, edgeStorageLevel: StorageLevel.MEMORY_ONLY, vertexStorageLevel: StorageLevel.MEMORY_ONLY): Graph[VD, Int] = {
+    val edges = rawEdges.map(p => Edge(p._1, p._2, 1))
+    val graph = GraphImpl(edge, defaultValue, edgeStorageLevel, vertexStorageLevel)
+    uniqueEdges match {
+      case Some(p) => graph.partitionBy(p).groupEdges((a, b) => a + b)
+      case None => graph
+    }
+  }
+
+  def fromEdges[VD: ClassTag, ED: ClassTag](edges: RDD[Edge[ED]], defaultValue: VD, edgeStorageLevel: StorageLevel.MEMORY_ONLY, vertexStorageLevel: StorageLevel.MEMORY_ONLY): Graph[VD, ED] = {
+    GraphImp(edges, defaultValue, edgeStorageLevel, vertexStorageLevel)
+  }
+
+  def apply[VD: ClassTag, ED: ClassTag](vertices: RDD[(VertexId, VD)], edges: RDD[Edge[ED]], defaultVertexAttr: VD = null.asInstanceOf[VD], edgeStorageLevel: StorageLevel = StorageLevel.MEMORY_ONLY, vertexStorageLevel: StorageLevel = StorageLevel.MEMORY_ONLY): Graph[VD, ED] = {
+    GraphImpl(vertices, edges, defaultVertexAttr, edgeStorageLevel, vertexStorageLevel)
+  }
+
+  implicit def graphToGraphOps[VD: ClassTag, ED: ClassTag] (g: Graph[VD, ED]) : GraphOps[VD, ED] = g.ops
 }
