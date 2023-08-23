@@ -54,4 +54,16 @@ abstract class Graph[VD: ClassTag, ED: ClassTag] protected() extends Serializabl
   def reverse: Graph[VD, ED]
 
   def subgraph(epred: EdgeTriplet[VD, ED] => Boolean = (x => true), vpred: (VertexId, VD) => Boolean = ((v, d) => true)): Graph[VD, ED]
+
+  def mask[VD2: ClassTag, ED2: ClassTag](other: Graph[VD2, ED2]): Graph[VD, ED]
+
+  def groupEdges(merge: (ED, ED) => ED): Graph[VD, ED]
+
+  def aggregateMessages[A: ClassTag](sendMsg: EdgeContext[VD, ED, A] => Unit, mergeMsg: (A, A) => A, tripletFields: TripletFields = TripletFields.All) : VertexRDD[A] = {
+    aggregateMessagesWithActiveSet(sendMsg, mergeMsg, tripletFields, None)
+  }
+
+  private[graphx] def aggregateMessagesWithActiveSet[A: ClassTag](sendMsg: EdgeContext[VD, ED, A] => Unit, mergeMsg: (A, A) => A, tripletFields: Any, activeSetOpt: Option[(VertexRDD[_], EdgeDirection)]) = VertexRDD[A]
+
+
 }
